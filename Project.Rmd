@@ -1,0 +1,122 @@
+---
+title: "STAT 331 Project"
+author: "Adaijah Wilson"
+date: '2018-11-13'
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+```{r}
+# loading the data as a data.frame to be used later in the program
+setwd("/Users/adaijahwilson/Documents/STAT 331/Project") 
+chd <- read.csv("chds_births.csv") 
+head(chd)
+summary(chd)
+pairs(chd[c(1:6)],pch = 16, cex = .3)
+pairs(chd[c(1,7:12)],pch = 16, cex = .3)
+pairs(chd[c(1,13:18)],pch = 16, cex = .3)
+```
+
+Basically, you notice that all of the covariates whether they are continuous or categorical are coded as continuous variables thus far.
+```{r}
+M1 <- lm(wt ~ ., data = chd)
+summary(M1)
+```
+
+Determining the number data containing an NA
+```{r}
+n <- length(chd$wt)
+na_row_count <- rep(NA, n)
+for (ii in 1:n) {
+  na_row_count[ii] <- sum(is.na(chd[ii,]))
+}
+sum(na_row_count > 0)
+table(na_row_count)
+```
+```{r}
+n <- length(chd)
+na_col_count <- rep(NA, n)
+for (ii in 1:n) {
+  na_col_count[ii] <- sum(is.na(chd[,ii]))
+}
+na_col_count <- matrix(na_col_count,nrow = 1,ncol = n)
+
+colnames(na_col_count) <- (colnames(chd))
+na_col_count
+```
+
+```{r}
+chd <-chd[-c(12,13)]
+```
+
+
+```{r}
+eth_levels <- c("Cau", "Mex", "Afr-Am", "Asi", "Mix", "Oth")
+eth_breaks <- c(-Inf, 5, 6, 7, 8, 9, Inf) 
+chd$meth <- cut(chd$meth, breaks = eth_breaks, labels = eth_levels)
+chd$feth <- cut(chd$feth, breaks = eth_breaks, labels = eth_levels)
+
+
+ed_levels <- c("Elem", "Mid", "High", "High-Tra", "High-Col", "Col", "Tra", "High-Unc")
+ed_breaks <- c(-Inf, 0, 1, 2, 3, 4, 5, 6, Inf)
+chd$med <- cut(chd$med, breaks = ed_breaks, labels = ed_levels)
+chd$fed <- cut(chd$fed, breaks = ed_breaks, labels = ed_levels)
+
+mar_levels <- c("Mar", "Leg_Sep", "Div", "Wid", "Nev_Mar")
+mar_breaks <-c(-Inf, 1, 2, 3, 4, Inf)
+chd$marital <- cut(chd$marital, breaks = mar_breaks, labels = mar_levels)
+
+inc_levels <- c("<2.5k", "<5k", "<7.5k", "<10k", "<12.5", "<15k", "17.5k", "<20k", "<22.5k", ">22.5k" )
+inc_breaks <- c(-Inf, 0, 1, 2, 3, 4, 5, 6, 7, 8, Inf)
+chd$income <- cut(chd$income, breaks = inc_breaks, labels = inc_levels)
+
+smoke_levels <- c("Never", "Now", "To_Preg", "Past")
+smoke_breaks <-c(-Inf, 0, 1, 2, Inf)
+chd$smoke <- cut(chd$smoke, breaks = smoke_breaks, labels = smoke_levels)
+
+time_levels <- c("Never", "Still", "During", "<1yr", "<2yrs", "<3yrs", "<4yrs", "<9yrs", ">10yrs", "Unk")
+time_breaks <-c(-Inf, 0, 1, 2, 3, 4, 5, 6, 7, 8, Inf)
+chd$time <- cut(chd$time, breaks = time_breaks, labels = time_levels)
+
+number_levels <- c("Never", "<4", "<9", "<14", "<19", "<29", "<39", "<60", ">60", "Unk")
+number_breaks <-c(-Inf, 0, 1, 2, 3, 4, 5, 6, 7, 8, Inf)
+chd$number <- cut(chd$number, breaks = number_breaks, labels = number_levels)
+
+```
+
+```{r}
+M2 <- lm(wt ~ ., data = chd)
+summary(M2)
+```
+```{r}
+n <- length(chd$wt)
+na_row <- rep(NA, n)
+count <- 0
+for (ii in 1:n) {
+  if (sum(is.na(chd[ii,])) > 0) {
+    count <- count + 1
+    na_row[count] <- ii
+    
+  }
+}
+delete_rows <- na_row[0:count]
+chd <- chd[-delete_rows,]
+```
+
+```{r}
+M0 <- lm(wt ~ 1, data = chd)
+Mmax <- lm(wt ~ (.)^2, data = chd)
+
+# forward selection
+system.time({ # time the calculation
+  Mfwd <- step(object = M0, # starting point model
+               scope = list(lower = M0, upper = Mmax), # smallest and largest model
+               direction = "forward",
+               trace = FALSE) # trace prints out information
+  })
+```
+
